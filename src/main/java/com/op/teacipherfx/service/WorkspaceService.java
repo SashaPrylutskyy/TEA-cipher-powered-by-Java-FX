@@ -14,6 +14,32 @@ public class WorkspaceService {
     private static final String DECRYPTED_DIR = "Decrypted";
     private static final DateTimeFormatter FILE_NAME_FORMAT = DateTimeFormatter.ofPattern("yyyy.MM.dd.'No'.HHmmss");
 
+    public void saveBinaryResult(byte[] content, String prefix, String password) throws Exception {
+        String folderName = "KeySession_" + Integer.toHexString(password.hashCode());
+        File targetDir = new File(new File(folderName), ENCRYPTED_DIR);
+
+        if (!targetDir.exists()) targetDir.mkdirs();
+
+        String timestamp = LocalDateTime.now().format(FILE_NAME_FORMAT);
+        String filename = String.format("%s_%s.bin", prefix, timestamp);
+        Files.write(new File(targetDir, filename).toPath(), content);
+
+        log.info("Бінарний файл збережено для тестів: {}", filename);
+    }
+
+    public void saveNistBitstream(String bitString, String password) throws Exception {
+        String folderName = "KeySession_" + Integer.toHexString(password.hashCode());
+        File targetDir = new File(new File(folderName), ENCRYPTED_DIR);
+
+        if (!targetDir.exists()) targetDir.mkdirs();
+
+        String timestamp = LocalDateTime.now().format(FILE_NAME_FORMAT);
+        String filename = String.format("NIST_BITS_%s.txt", timestamp);
+
+        java.nio.file.Files.writeString(new File(targetDir, filename).toPath(), bitString);
+        log.info("Файл з бітами для NIST збережено: {}", filename);
+    }
+
     public void saveResult(String content, String prefix, String password, boolean isEncryption) throws Exception {
         String folderName = "KeySession_" + Integer.toHexString(password.hashCode());
         File baseDir = new File(folderName);

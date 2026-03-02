@@ -113,12 +113,23 @@ public class CipherController {
             String input = inputTextArea.getText();
             if (pass.isEmpty() || input.isEmpty()) return;
 
-            String result = isEncryption ?
-                    cipherService.encrypt(input, pass) : cipherService.decrypt(input, pass);
+            if (isEncryption) {
+                byte[] rawBytes = cipherService.encrypt(input, pass);
+                String bitString = cipherService.bytesToBitString(rawBytes);
 
-            inputTextArea.setText(result);
-            workspaceService.saveResult(result, isEncryption ? "ENCRYPTED" : "DECRYPTED", pass, isEncryption);
-            showStatus("Успішно! Результат збережено.", Color.GREEN);
+                workspaceService.saveNistBitstream(bitString, pass);
+
+                String base64Result = cipherService.binaryToString(rawBytes);
+                inputTextArea.setText(base64Result);
+
+                workspaceService.saveResult(base64Result, "ENCRYPTED", pass, true);
+
+                showStatus("Успішно! Створено файл з бітами для тестів.", Color.GREEN);
+            } else {
+                String decryptedText = cipherService.decrypt(input, pass);
+                workspaceService.saveResult(decryptedText, "DECRYPTED", pass, false);
+                inputTextArea.setText(decryptedText);
+            }
         } catch (Exception e) {
             log.error("Cipher error", e);
             showStatus("Помилка! Перевірте дані.", Color.RED);

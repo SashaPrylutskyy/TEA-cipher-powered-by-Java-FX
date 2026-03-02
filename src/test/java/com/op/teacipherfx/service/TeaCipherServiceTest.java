@@ -14,14 +14,16 @@ class TeaCipherServiceTest {
 
     @BeforeEach
     void setUp() {
-        cipherService = new TeaCipherService(); //
+        cipherService = new TeaCipherService();
     }
 
     @Test
     void testEncryptionDecryptionCycle() {
         String original = "Hello, JavaFX!";
-        String encrypted = cipherService.encrypt(original, key); //
-        String decrypted = cipherService.decrypt(encrypted, key); //
+        byte[] encryptedBytes = cipherService.encrypt(original, key);
+        String base64Encrypted = cipherService.binaryToString(encryptedBytes);
+
+        String decrypted = cipherService.decrypt(base64Encrypted, key);
 
         assertEquals(original, decrypted, "Розшифрований текст має збігатися з оригіналом");
     }
@@ -29,18 +31,21 @@ class TeaCipherServiceTest {
     @Test
     void testKnownVector() {
         String input = "iloveyou";
-        // Розрахований еталонний Base64 для Little-Endian TEA з PKCS7 падінгом
         String expectedBase64 = "A+oZbOVnY3PllnoGAY02Mg==";
 
-        String result = cipherService.encrypt(input, key); //
-        assertEquals(expectedBase64, result, "Результат шифрування не збігається з еталоном Little-Endian");
+        byte[] encryptedBytes = cipherService.encrypt(input, key);
+        String resultBase64 = cipherService.binaryToString(encryptedBytes);
+
+        assertEquals(expectedBase64, resultBase64, "Результат шифрування не збігається з еталоном Base64");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"1234567", "12345678", "123456789"})
+    @ValueSource(strings = {"1234567", "12345678", "123456789", "Дуже довгий текст для перевірки падінгу блоків"})
     void testPaddingConsistency(String input) {
-        String encrypted = cipherService.encrypt(input, key); //
-        String decrypted = cipherService.decrypt(encrypted, key); //
+        byte[] encryptedBytes = cipherService.encrypt(input, key);
+        String base64 = cipherService.binaryToString(encryptedBytes);
+        String decrypted = cipherService.decrypt(base64, key);
+
         assertEquals(input, decrypted, "Алгоритм має коректно обробляти тексти різної довжини (падінг)");
     }
 }

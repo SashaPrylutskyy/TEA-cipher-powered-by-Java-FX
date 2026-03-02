@@ -11,7 +11,7 @@ public class TeaCipherService {
     private static final int DELTA = 0x9E3779B9;
     private static final int NUM_ROUNDS = 32;
 
-    public String encrypt(String plainText, String password) {
+    public byte[] encrypt(String plainText, String password) {
         byte[] data = plainText.getBytes(StandardCharsets.UTF_8);
         byte[] paddedData = addPadding(data);
         int[] key = formatKey(password);
@@ -21,7 +21,21 @@ public class TeaCipherService {
             encipherBlock(block, key);
             intsToBytes(block, paddedData, i);
         }
-        return Base64.getEncoder().encodeToString(paddedData);
+        return paddedData;
+    }
+
+    public String bytesToBitString(byte[] data) {
+        StringBuilder sb = new StringBuilder();
+        for (byte b : data) {
+            for (int i = 7; i >= 0; i--) {
+                sb.append((b >> i) & 1);
+            }
+        }
+        return sb.toString();
+    }
+
+    public String binaryToString(byte[] binaryData) {
+        return Base64.getEncoder().encodeToString(binaryData);
     }
 
     public String decrypt(String base64CipherText, String password) {

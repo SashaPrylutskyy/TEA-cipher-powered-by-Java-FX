@@ -17,6 +17,7 @@ The application provides reliable text encryption using a 128-bit key. Developme
 * **Endianness:** Little-Endian byte order implementation.
 * **Padding:** PKCS#7 standard padding.
 * **Security:** Built-in password complexity validation and secure key generator.
+* **NIST Ready:** Ability to export ciphertext as raw bytes (.bin) and bitstreams (.txt) for statistical testing.
 * **User Interface:** Modern JavaFX GUI featuring seamless Drag & Drop support.
 
 ---
@@ -36,6 +37,26 @@ $$v_0 = v_0 + \left( ((v_1 \ll 4) + k_0) \oplus (v_1 + sum) \oplus ((v_1 \gg 5) 
 $$v_1 = v_1 + \left( ((v_0 \ll 4) + k_2) \oplus (v_0 + sum) \oplus ((v_0 \gg 5) + k_3) \right)$$
 
 Where $sum$ is the accumulated value of $\delta$ for the current round. The algorithm executes 32 full cycles (64 rounds) per block.
+
+---
+## 📊 Statistical Testing (NIST SP 800-22)
+To confirm cryptographic strength, the application supports data generation for the NIST Statistical Test Suite. Every encryption session automatically creates:
+1. Binary Raw (.bin): Used for testing with utilities like dieharder.
+2. ASCII Bitstream (.txt): A text sequence of '0' and '1' for online testers (e.g., [Random Bitstream Tester](https://mzsoltmolnar.github.io/random-bitstream-tester)).
+---
+## 📂 Workspace Structure
+
+The application automatically organizes your cryptographic data by creating a dedicated directory hierarchy for each unique key session (based on the key's hash):
+
+```text
+📁 KeySession_[hash]/
+ ├── 📄 key.op                     # Key file (can be dragged into the UI)
+ ├── 📁 Encrypted/
+ │    ├── 📄 ENCRYPTED_...txt      # Result in Base64 (for readability)
+ │    └── 📄 NIST_BITS_...txt      # Bitstream (0/1) for testing
+ └── 📁 Decrypted/                 
+      └── 📄 DECRYPTED_...txt
+```
 
 ---
 
@@ -78,15 +99,3 @@ jpackage --type app-image --dest dist --name "TeaCipherOP" --input target --main
 4. Build the wrapper.
 
 ---
-
-## 📂 Workspace Structure
-
-The application automatically organizes your cryptographic data by creating a dedicated directory hierarchy for each unique key session (based on the key's hash):
-
-```text
-📁 Workspace/
- └── 📁 KeySession_[hash]/          # Root folder for the current key session
-      ├── 📄 key.op                 # Automatically generated key file
-      ├── 📁 Encrypted/             # Output directory for encrypted files
-      └── 📁 Decrypted/             # Output directory for decrypted files
-```
