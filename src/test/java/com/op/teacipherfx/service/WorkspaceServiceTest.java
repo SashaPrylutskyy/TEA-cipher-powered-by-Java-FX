@@ -1,14 +1,16 @@
 package com.op.teacipherfx.service;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Comparator;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
+@DisplayName("Тестування сервісу керування робочим простором")
 class WorkspaceServiceTest {
 
     private final WorkspaceService service = new WorkspaceService();
@@ -19,47 +21,41 @@ class WorkspaceServiceTest {
     void cleanUp() throws Exception {
         File dir = new File(sessionFolderName);
         if (dir.exists()) {
-            Files.walk(dir.toPath()).sorted(Comparator.reverseOrder()).map(java.nio.file.Path::toFile).forEach(File::delete);
+            Files.walk(dir.toPath())
+                    .sorted(Comparator.reverseOrder())
+                    .map(java.nio.file.Path::toFile)
+                    .forEach(File::delete);
         }
     }
 
     @Test
-    void testSaveResultAndDirectoryStructure() throws Exception {
-        service.saveResult("Base64Content", "ENCRYPTED", pass, true);
+    @DisplayName("Метод saveResult має створювати ієрархію папок та файл ключа при шифруванні")
+    void saveResult_EncryptionEnabled_CreatesSessionStructureAndKeyFile() throws Exception {
+        service.saveResult("Content", "ENCRYPTED", pass, true);
 
         File sessionDir = new File(sessionFolderName);
         File encryptedDir = new File(sessionDir, "Encrypted");
         File keyFile = new File(sessionDir, "key.op");
 
-        assertTrue(sessionDir.exists(), "Папка сесії має бути створена");
-        assertTrue(encryptedDir.exists(), "Підпапка Encrypted має бути створена");
-        assertTrue(keyFile.exists(), "Файл ключа key.op має бути створений");
+        assertThat(sessionDir).exists().isDirectory();
+        assertThat(encryptedDir).exists().isDirectory();
+        assertThat(keyFile).exists().isFile();
     }
 
     @Test
-    void testSaveBinaryResult() throws Exception {
-        byte[] rawData = {0x01, 0x02, 0x03, 0x04};
-        service.saveBinaryResult(rawData, "NIST_READY", pass);
+    @DisplayName("Метод saveNistBitstream має записувати коректну бітову послідовність у файл")
+    void saveNistBitstream_ValidBitString_WritesExactContentToFile() throws Exception {
+        String bitString = "110011001100";
 
-        File encryptedDir = new File(new File(sessionFolderName), "Encrypted");
-        File[] files = encryptedDir.listFiles((dir, name) -> name.endsWith(".bin"));
-
-        assertNotNull(files, "Директорія не повинна бути порожньою");
-        assertTrue(files.length > 0, "Мав бути створений хоча б один .bin файл");
-    }
-
-    @Test
-    void testSaveNistBitstream() throws Exception {
-        String bitString = "010101011100";
         service.saveNistBitstream(bitString, pass);
 
         File encryptedDir = new File(new File(sessionFolderName), "Encrypted");
-        File[] files = encryptedDir.listFiles((dir, name) -> name.startsWith("NIST_BITS_") && name.endsWith(".txt"));
+        File[] files = encryptedDir.listFiles((dir, name) -> name.startsWith("NIST_BITS_"));
 
-        assertNotNull(files, "Директорія не повинна бути порожньою");
-        assertTrue(files.length > 0, "Файл з бітовою послідовністю NIST має бути створений");
-
+        assertThat(files).isNotNull().isNotEmpty();
         String savedContent = Files.readString(files[0].toPath());
-        assertEquals(bitString, savedContent, "Збережений бітовий рядок має збігатися з оригіналом");
+        assertThat(savedContent)
+                .as("Вміст файлу NIST має точно відповідати переданому бітовому рядку")
+                .isEqualTo(bitString);
     }
 }

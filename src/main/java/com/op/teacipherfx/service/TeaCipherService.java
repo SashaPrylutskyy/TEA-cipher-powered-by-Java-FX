@@ -8,8 +8,6 @@ import java.util.Base64;
 
 @Slf4j
 public class TeaCipherService {
-    private static final int DELTA = 0x9E3779B9;
-    private static final int NUM_ROUNDS = 32;
 
     public byte[] encrypt(String plainText, String password) {
         byte[] data = plainText.getBytes(StandardCharsets.UTF_8);
@@ -18,10 +16,22 @@ public class TeaCipherService {
 
         for (int i = 0; i < paddedData.length; i += 8) {
             int[] block = bytesToInts(paddedData, i);
-            encipherBlock(block, key);
+            TeaAlgorithm.encipherBlock(block, key);
             intsToBytes(block, paddedData, i);
         }
         return paddedData;
+    }
+
+    public String decrypt(String base64CipherText, String password) {
+        byte[] data = Base64.getDecoder().decode(base64CipherText);
+        int[] key = formatKey(password);
+
+        for (int i = 0; i < data.length; i += 8) {
+            int[] block = bytesToInts(data, i);
+            TeaAlgorithm.decipherBlock(block, key);
+            intsToBytes(block, data, i);
+        }
+        return new String(removePadding(data), StandardCharsets.UTF_8);
     }
 
     public String bytesToBitString(byte[] data) {
@@ -38,38 +48,14 @@ public class TeaCipherService {
         return Base64.getEncoder().encodeToString(binaryData);
     }
 
-    public String decrypt(String base64CipherText, String password) {
-        byte[] data = Base64.getDecoder().decode(base64CipherText);
-        int[] key = formatKey(password);
-
-        for (int i = 0; i < data.length; i += 8) {
-            int[] block = bytesToInts(data, i);
-            decipherBlock(block, key);
-            intsToBytes(block, data, i);
+    public String generatePassword() {
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
+        SecureRandom random = new SecureRandom();
+        StringBuilder sb = new StringBuilder(16);
+        for (int i = 0; i < 16; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
         }
-        return new String(removePadding(data), StandardCharsets.UTF_8);
-    }
-
-    private void encipherBlock(int[] v, int[] key) {
-        int v0 = v[0], v1 = v[1], sum = 0;
-        for (int i = 0; i < NUM_ROUNDS; i++) {
-            sum += DELTA;
-            v0 += ((v1 << 4) + key[0]) ^ (v1 + sum) ^ ((v1 >>> 5) + key[1]);
-            v1 += ((v0 << 4) + key[2]) ^ (v0 + sum) ^ ((v0 >>> 5) + key[3]);
-        }
-        v[0] = v0;
-        v[1] = v1;
-    }
-
-    private void decipherBlock(int[] v, int[] key) {
-        int v0 = v[0], v1 = v[1], sum = DELTA * NUM_ROUNDS;
-        for (int i = 0; i < NUM_ROUNDS; i++) {
-            v1 -= ((v0 << 4) + key[2]) ^ (v0 + sum) ^ ((v0 >>> 5) + key[3]);
-            v0 -= ((v1 << 4) + key[0]) ^ (v1 + sum) ^ ((v1 >>> 5) + key[1]);
-            sum -= DELTA;
-        }
-        v[0] = v0;
-        v[1] = v1;
+        return sb.toString();
     }
 
     private int[] formatKey(String password) {
@@ -114,13 +100,5 @@ public class TeaCipherService {
         byte[] unpadded = new byte[data.length - padCount];
         System.arraycopy(data, 0, unpadded, 0, unpadded.length);
         return unpadded;
-    }
-
-    public String generatePassword() {
-        String all = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+";
-        SecureRandom random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(16);
-        for (int i = 0; i < 16; i++) sb.append(all.charAt(random.nextInt(all.length())));
-        return sb.toString();
     }
 }
